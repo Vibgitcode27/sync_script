@@ -8,7 +8,7 @@ import readline from "readline";
 const execAsync = promisify(exec);
 
 const composio = new Composio({
-  apiKey: '3r9tnmi406draeuu7rbhf',
+  apiKey: 'api_key',
   toolkitVersions: { github: "20251027_00" }
 });
 
