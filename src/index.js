@@ -207,7 +207,7 @@ async function setupRemote(username, repoName) {
 }
 
 // commit and push
-async function commitAndPush(commitMessage = "automated commit") {
+async function commitAndPush(commitMessage = "maunual commit") {
   try {
     console.log('📤 Staging changes...');
     await execAsync('git add .');
