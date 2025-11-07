@@ -3,6 +3,7 @@ import path from "path";
 import { exec } from "child_process";
 import { promisify } from "util";
 import fs from "fs";
+import readline from "readline";
 
 const execAsync = promisify(exec);
 
@@ -11,11 +12,11 @@ const composio = new Composio({
   toolkitVersions: { github: "20251027_00" }
 });
 
-const userId = 'default-user';
+let userId = 'default-user';
 const integrationName = 'github';
 const configId = 'ac_cu5EHHpaXzJs';
 
-// Function to open URL in browser
+// this opens url in the browser
 function openBrowser(url) {
   const platform = process.platform;
   let command;
@@ -30,17 +31,18 @@ function openBrowser(url) {
   
   exec(command, (error) => {
     if (error) {
-      console.log('⚠️ Could not auto-open browser. Please open the URL manually.');
+      console.log('!!!! Could not auto-open browser. Please open the URL manually.');
     }
   });
 }
 
-// Function to wait for a specified time
+// sleep function
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Function to poll connection status
+// I couldn't not find any function from composio sdk that checks it the authentication is succesful or not therefore I made this logic
+// that polls composio 60 times until it gets ACTIVE status
 async function waitForAuthentication(connectionId, maxAttempts = 60) {
   console.log('🔄 Polling for authentication status...\n');
   
@@ -57,10 +59,10 @@ async function waitForAuthentication(connectionId, maxAttempts = 60) {
           process.stdout.write(`\r⏳ Attempt ${attempt}/${maxAttempts} - Status: ${status}  `);
           
           if (status === 'ACTIVE') {
-            console.log('\n\n✅ Authentication successful! Connection is now ACTIVE.\n');
+            console.log('\n\n :)) Authentication successful! Connection is now ACTIVE.\n');
             return { success: true, account: item };
           } else if (status === 'FAILED' || status === 'ERROR') {
-            console.log('\n\n❌ Authentication failed. Connection status: ' + status + '\n');
+            console.log('\n\n :(( Authentication failed. Connection status: ' + status + '\n');
             return { success: false, status };
           }
           
@@ -71,15 +73,15 @@ async function waitForAuthentication(connectionId, maxAttempts = 60) {
       await sleep(2000);
       
     } catch (error) {
-      console.log(`\n⚠️ Error checking status: ${error.message}`);
+      console.log(`\n !!! Error checking status: ${error.message}`);
     }
   }
   
-  console.log('\n\n⏱️ Timeout: Authentication not completed within the time limit.\n');
+  console.log('\n\n :/ Timeout: Authentication not completed within the time limit.\n');
   return { success: false, status: 'TIMEOUT' };
 }
 
-// Function to get GitHub username
+// this get the logged in user profile 
 async function getGitHubUsername() {
   try {
     const result = await composio.tools.execute("GITHUB_GET_THE_AUTHENTICATED_USER", {
@@ -91,15 +93,15 @@ async function getGitHubUsername() {
       return result.data.login || result.data.username;
     }
   } catch (error) {
-    console.error('❌ Error getting GitHub username:', error.message);
+    console.error(': ((  Error getting GitHub username:', error.message);
   }
   return null;
 }
 
-// Function to check if repo exists on GitHub
+// this checks if there repo exists or not
 async function checkRepoExists(username, repoName) {
   try {
-    console.log(`🔍 Checking if repository "${repoName}" exists on GitHub...`);
+    console.log(` :0 Checking if repository "${repoName}" exists on GitHub...`);
     
     const result = await composio.tools.execute("GITHUB_GET_A_REPOSITORY", {
       userId,
@@ -110,19 +112,19 @@ async function checkRepoExists(username, repoName) {
     });
     
     if (result && result.successful && result.data) {
-      console.log(`✅ Repository found: ${result.data.html_url}\n`);
+      console.log(`: - )  Repository found: ${result.data.html_url}\n`);
       return { exists: true, data: result.data };
     }
   } catch (error) {
-    console.log(`ℹ️ Repository "${repoName}" not found on GitHub.\n`);
+    console.log(`!!! Repository "${repoName}" not found on GitHub.\n`);
   }
   return { exists: false };
 }
 
-// Function to create a new GitHub repository
+// this creates new github repo if there is no origin
 async function createGitHubRepo(repoName, description = "Created via Composio") {
   try {
-    console.log(`📦 Creating new repository: ${repoName}...`);
+    console.log(`<><><><> Creating new repository: ${repoName}...`);
     
     const result = await composio.tools.execute("GITHUB_CREATE_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER", {
       userId,
@@ -144,7 +146,7 @@ async function createGitHubRepo(repoName, description = "Created via Composio") 
   }
 }
 
-// Function to check git status
+// git status
 async function checkGitStatus() {
   try {
     if (!fs.existsSync('.git')) {
@@ -169,45 +171,42 @@ async function checkGitStatus() {
   }
 }
 
-// Function to initialize git repository
+// this create local git repo 
 async function initializeGit() {
   try {
     console.log('🎬 Initializing git repository...');
     await execAsync('git init');
-    console.log('✅ Git initialized.\n');
+    console.log(':) Git initialized.\n');
     return true;
   } catch (error) {
-    console.error('❌ Error initializing git:', error.message);
+    console.error(':( Error initializing git:', error.message);
     return false;
   }
 }
 
-// Function to add remote if not exists
+// This sets up the remote for this repsitory
 async function setupRemote(username, repoName) {
   try {
-    // Check if remote already exists
     try {
       const { stdout } = await execAsync('git remote get-url origin');
-      console.log(`ℹ️ Remote origin already exists: ${stdout.trim()}`);
+      console.log(` !! Remote origin already exists: ${stdout.trim()}`);
       
-      // Update remote URL to ensure it's correct
       const remoteUrl = `https://github.com/${username}/${repoName}.git`;
       await execAsync(`git remote set-url origin ${remoteUrl}`);
-      console.log(`✅ Remote URL updated to: ${remoteUrl}\n`);
+      console.log(`: )) Remote URL updated to: ${remoteUrl}\n`);
     } catch {
-      // Remote doesn't exist, add it
       const remoteUrl = `https://github.com/${username}/${repoName}.git`;
       await execAsync(`git remote add origin ${remoteUrl}`);
-      console.log(`✅ Remote origin added: ${remoteUrl}\n`);
+      console.log(` : )) Remote origin added: ${remoteUrl}\n`);
     }
     return true;
   } catch (error) {
-    console.error('❌ Error setting up remote:', error.message);
+    console.error(': (( Error setting up remote:', error.message);
     return false;
   }
 }
 
-// Function to commit and push changes
+// commit and push
 async function commitAndPush(commitMessage = "automated commit") {
   try {
     console.log('📤 Staging changes...');
@@ -218,11 +217,9 @@ async function commitAndPush(commitMessage = "automated commit") {
     
     console.log('🚀 Pushing to GitHub...');
     
-    // Try to push, handle first push scenario
     try {
       await execAsync('git push -u origin main');
     } catch (error) {
-      // If main doesn't exist, try master
       try {
         await execAsync('git branch -M main');
         await execAsync('git push -u origin main');
@@ -231,23 +228,46 @@ async function commitAndPush(commitMessage = "automated commit") {
       }
     }
     
-    console.log('✅ Successfully pushed to GitHub!\n');
+    console.log(': )) Successfully pushed to GitHub!\n');
     return true;
   } catch (error) {
-    console.error('❌ Error during commit/push:', error.message);
-    console.log('\n💡 Tip: Make sure you have git configured with your credentials.');
+    console.error(' : (( Error during commit/push:', error.message);
+    console.log('\n :////// Tip: Make sure you have git configured with your credentials.');
     return false;
   }
 }
 
-// Main sync function with push support
-async function syncWithPush() {
+// this func get the userId as input
+function getUserInput(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer);
+    });
+  });
+}
+
+async function sync() {
+
+  console.log('\n !! DISCLIMER: Make sure you remember this ID!');
+  console.log('This is how we remember your credentials.\n');
+  userId = await getUserInput('Enter your User ID: ');
+
+  if (!userId || userId.trim() === '') {
+      console.log(':( User ID is required. Exiting...\n');
+      return;
+  }
+  console.log(`\n Using User ID: ${userId}\n`);
   const repoName = path.basename(process.cwd());
   
   try {
-    console.log('🔐 Connecting GitHub...\n');
+    console.log(':0 Connecting GitHub...\n');
     
-    // Clean up existing connections
     try {
       const connectedAccounts = await composio.connectedAccounts.list({
         userIds: [userId],
@@ -256,14 +276,13 @@ async function syncWithPush() {
       for (const item of connectedAccounts.items) {
         if (item.authConfig.id === configId) {
           await composio.connectedAccounts.delete(item.id);
-          console.log('🗑️ Cleaned up existing connection\n');
+          console.log('Cleaned up existing connection\n');
         }
       }
     } catch (error) {
-      console.log('⚠️ No existing connections to clean up\n');
+      console.log(' !!! No existing connections to clean up\n');
     }
     
-    // Initiate new connection
     const connReq = await composio.connectedAccounts.initiate(
       userId,
       configId,
@@ -272,75 +291,69 @@ async function syncWithPush() {
       }
     );
     
-    console.log('👉 Opening browser for authentication...\n');
+    console.log('->  Opening browser for authentication...\n');
     openBrowser(connReq.redirectUrl);
     
-    // Wait for authentication
     const authResult = await waitForAuthentication(connReq.id, 60);
     
     if (!authResult.success) {
-      console.log('💔 Authentication failed. Please try again.');
+      console.log('Authentication failed. Please try again.');
       return;
     }
     
-    console.log('🎉 GitHub successfully connected!\n');
+    console.log(':-)) GitHub successfully connected!\n');
     
     // Get GitHub username
     const username = await getGitHubUsername();
     if (!username) {
-      console.log('❌ Could not retrieve GitHub username.');
+      console.log(': ((  Could not retrieve GitHub username.');
       return;
     }
     
-    console.log(`👤 GitHub User: ${username}`);
-    console.log(`📁 Local Repository: ${repoName}\n`);
+    console.log(`:0 GitHub User: ${username}`);
+    console.log(`(~~) Local Repository: ${repoName}\n`);
     
-    // Check if repo exists on GitHub
     const repoCheck = await checkRepoExists(username, repoName);
     
     if (!repoCheck.exists) {
-      // Create new repository
       const createResult = await createGitHubRepo(repoName);
       if (!createResult.success) {
-        console.log('❌ Failed to create repository. Aborting.');
+        console.log(':( Failed to create repository. Aborting.');
         return;
       }
     }
     
-    // Check local git status
     const gitStatus = await checkGitStatus();
     
     if (!gitStatus.initialized) {
-      console.log('🎬 Initializing local git repository...');
+      console.log(':0 Initializing local git repository...');
       const initSuccess = await initializeGit();
       if (!initSuccess) return;
     }
     
-    // Setup remote
     const remoteSuccess = await setupRemote(username, repoName);
     if (!remoteSuccess) return;
     
-    // Check for changes and push
     const currentStatus = await checkGitStatus();
     
     if (currentStatus.hasChanges) {
-      console.log('📤 Preparing to push changes...\n');
+      console.log(':0 Preparing to push changes...\n');
       const pushSuccess = await commitAndPush();
       
       if (pushSuccess) {
-        console.log('🎊 All done! Your changes are now on GitHub!');
-        console.log(`🔗 View at: https://github.com/${username}/${repoName}\n`);
+        console.log(':--))))) All done! Your changes are now on GitHub!');
+        console.log(`//// View at: https://github.com/${username}/${repoName}\n`);
       }
     } else {
       console.log('✓ Everything is up to date. Nothing to push.\n');
     }
     
   } catch (error) {
-    console.error('\n❌ Error:', error.message);
+    console.error('\n : ) Error:', error.message);
     if (error.details) {
       console.error('Details:', error.details);
     }
   }
 }
 
-syncWithPush();
+sync();
