@@ -135,11 +135,11 @@ async function createGitHubRepo(repoName, description = "Created via Composio") 
     });
     
     if (result && result.successful && result.data) {
-      console.log(`✅ Repository created: ${result.data.html_url}\n`);
+      console.log(`Repository created: ${result.data.html_url}\n`);
       return { success: true, data: result.data };
     }
   } catch (error) {
-    console.error('❌ Error creating repository:', error.message);
+    console.error('Error creating repository:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -147,9 +147,8 @@ async function createGitHubRepo(repoName, description = "Created via Composio") 
 // Function to check git status
 async function checkGitStatus() {
   try {
-    // Check if git is initialized
     if (!fs.existsSync('.git')) {
-      console.log('ℹ️ Git not initialized in this directory.\n');
+      console.log('Git not initialized in this directory.\n');
       return { initialized: false, hasChanges: false };
     }
     
@@ -157,7 +156,7 @@ async function checkGitStatus() {
     const hasChanges = status.trim().length > 0;
     
     if (hasChanges) {
-      console.log('📝 Local changes detected:\n');
+      console.log('Local changes detected:\n');
       const { stdout: shortStatus } = await execAsync('git status --short');
       console.log(shortStatus);
     } else {
