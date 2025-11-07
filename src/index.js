@@ -31,7 +31,7 @@ function openBrowser(url) {
   
   exec(command, (error) => {
     if (error) {
-      console.log('!!!! Could not auto-open browser. Please open the URL manually.');
+      console.log('⚠️  Could not auto-open browser. Please open the URL manually.');
     }
   });
 }
@@ -59,10 +59,10 @@ async function waitForAuthentication(connectionId, maxAttempts = 60) {
           process.stdout.write(`\r⏳ Attempt ${attempt}/${maxAttempts} - Status: ${status}  `);
           
           if (status === 'ACTIVE') {
-            console.log('\n\n :)) Authentication successful! Connection is now ACTIVE.\n');
+            console.log('\n\n✅ Authentication successful! Connection is now ACTIVE.\n');
             return { success: true, account: item };
           } else if (status === 'FAILED' || status === 'ERROR') {
-            console.log('\n\n :(( Authentication failed. Connection status: ' + status + '\n');
+            console.log('\n\n❌ Authentication failed. Connection status: ' + status + '\n');
             return { success: false, status };
           }
           
@@ -73,11 +73,11 @@ async function waitForAuthentication(connectionId, maxAttempts = 60) {
       await sleep(2000);
       
     } catch (error) {
-      console.log(`\n !!! Error checking status: ${error.message}`);
+      console.log(`\n⚠️  Error checking status: ${error.message}`);
     }
   }
   
-  console.log('\n\n :/ Timeout: Authentication not completed within the time limit.\n');
+  console.log('\n\n⏱️  Timeout: Authentication not completed within the time limit.\n');
   return { success: false, status: 'TIMEOUT' };
 }
 
@@ -93,7 +93,7 @@ async function getGitHubUsername() {
       return result.data.login || result.data.username;
     }
   } catch (error) {
-    console.error(': ((  Error getting GitHub username:', error.message);
+    console.error('❌ Error getting GitHub username:', error.message);
   }
   return null;
 }
@@ -101,7 +101,7 @@ async function getGitHubUsername() {
 // this checks if there repo exists or not
 async function checkRepoExists(username, repoName) {
   try {
-    console.log(` :0 Checking if repository "${repoName}" exists on GitHub...`);
+    console.log(`🔍 Checking if repository "${repoName}" exists on GitHub...`);
     
     const result = await composio.tools.execute("GITHUB_GET_A_REPOSITORY", {
       userId,
@@ -112,11 +112,11 @@ async function checkRepoExists(username, repoName) {
     });
     
     if (result && result.successful && result.data) {
-      console.log(`: - )  Repository found: ${result.data.html_url}\n`);
+      console.log(`✅ Repository found: ${result.data.html_url}\n`);
       return { exists: true, data: result.data };
     }
   } catch (error) {
-    console.log(`!!! Repository "${repoName}" not found on GitHub.\n`);
+    console.log(`ℹ️  Repository "${repoName}" not found on GitHub.\n`);
   }
   return { exists: false };
 }
@@ -124,7 +124,7 @@ async function checkRepoExists(username, repoName) {
 // this creates new github repo if there is no origin
 async function createGitHubRepo(repoName, description = "Created via Composio") {
   try {
-    console.log(`<><><><> Creating new repository: ${repoName}...`);
+    console.log(`🆕 Creating new repository: ${repoName}...`);
     
     const result = await composio.tools.execute("GITHUB_CREATE_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER", {
       userId,
@@ -137,11 +137,11 @@ async function createGitHubRepo(repoName, description = "Created via Composio") 
     });
     
     if (result && result.successful && result.data) {
-      console.log(`Repository created: ${result.data.html_url}\n`);
+      console.log(`✅ Repository created: ${result.data.html_url}\n`);
       return { success: true, data: result.data };
     }
   } catch (error) {
-    console.error('Error creating repository:', error.message);
+    console.error('❌ Error creating repository:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -150,7 +150,7 @@ async function createGitHubRepo(repoName, description = "Created via Composio") 
 async function checkGitStatus() {
   try {
     if (!fs.existsSync('.git')) {
-      console.log('Git not initialized in this directory.\n');
+      console.log('ℹ️  Git not initialized in this directory.\n');
       return { initialized: false, hasChanges: false };
     }
     
@@ -158,7 +158,7 @@ async function checkGitStatus() {
     const hasChanges = status.trim().length > 0;
     
     if (hasChanges) {
-      console.log('Local changes detected:\n');
+      console.log('📝 Local changes detected:\n');
       const { stdout: shortStatus } = await execAsync('git status --short');
       console.log(shortStatus);
     } else {
@@ -176,10 +176,10 @@ async function initializeGit() {
   try {
     console.log('🎬 Initializing git repository...');
     await execAsync('git init');
-    console.log(':) Git initialized.\n');
+    console.log('✅ Git initialized.\n');
     return true;
   } catch (error) {
-    console.error(':( Error initializing git:', error.message);
+    console.error('❌ Error initializing git:', error.message);
     return false;
   }
 }
@@ -189,19 +189,19 @@ async function setupRemote(username, repoName) {
   try {
     try {
       const { stdout } = await execAsync('git remote get-url origin');
-      console.log(` !! Remote origin already exists: ${stdout.trim()}`);
+      console.log(`ℹ️  Remote origin already exists: ${stdout.trim()}`);
       
       const remoteUrl = `https://github.com/${username}/${repoName}.git`;
       await execAsync(`git remote set-url origin ${remoteUrl}`);
-      console.log(`: )) Remote URL updated to: ${remoteUrl}\n`);
+      console.log(`✅ Remote URL updated to: ${remoteUrl}\n`);
     } catch {
       const remoteUrl = `https://github.com/${username}/${repoName}.git`;
       await execAsync(`git remote add origin ${remoteUrl}`);
-      console.log(` : )) Remote origin added: ${remoteUrl}\n`);
+      console.log(`✅ Remote origin added: ${remoteUrl}\n`);
     }
     return true;
   } catch (error) {
-    console.error(': (( Error setting up remote:', error.message);
+    console.error('❌ Error setting up remote:', error.message);
     return false;
   }
 }
@@ -228,11 +228,11 @@ async function commitAndPush(commitMessage = "automated commit") {
       }
     }
     
-    console.log(': )) Successfully pushed to GitHub!\n');
+    console.log('✅ Successfully pushed to GitHub!\n');
     return true;
   } catch (error) {
-    console.error(' : (( Error during commit/push:', error.message);
-    console.log('\n :////// Tip: Make sure you have git configured with your credentials.');
+    console.error('❌ Error during commit/push:', error.message);
+    console.log('\n💡 Tip: Make sure you have git configured with your credentials.');
     return false;
   }
 }
@@ -254,19 +254,19 @@ function getUserInput(question) {
 
 async function sync() {
 
-  console.log('\n !! DISCLIMER: Make sure you remember this ID!');
+  console.log('\n⚠️  DISCLAIMER: Make sure you remember this ID!');
   console.log('This is how we remember your credentials.\n');
   userId = await getUserInput('Enter your User ID: ');
 
   if (!userId || userId.trim() === '') {
-      console.log(':( User ID is required. Exiting...\n');
+      console.log('❌ User ID is required. Exiting...\n');
       return;
   }
-  console.log(`\n Using User ID: ${userId}\n`);
+  console.log(`\n✓ Using User ID: ${userId}\n`);
   const repoName = path.basename(process.cwd());
   
   try {
-    console.log(':0 Connecting GitHub...\n');
+    console.log('🔗 Connecting to GitHub...\n');
     
     try {
       const connectedAccounts = await composio.connectedAccounts.list({
@@ -276,11 +276,11 @@ async function sync() {
       for (const item of connectedAccounts.items) {
         if (item.authConfig.id === configId) {
           await composio.connectedAccounts.delete(item.id);
-          console.log('Cleaned up existing connection\n');
+          console.log('🧹 Cleaned up existing connection\n');
         }
       }
     } catch (error) {
-      console.log(' !!! No existing connections to clean up\n');
+      console.log('ℹ️  No existing connections to clean up\n');
     }
     
     const connReq = await composio.connectedAccounts.initiate(
@@ -291,34 +291,33 @@ async function sync() {
       }
     );
     
-    console.log('->  Opening browser for authentication...\n');
+    console.log('🌐 Opening browser for authentication...\n');
     openBrowser(connReq.redirectUrl);
     
     const authResult = await waitForAuthentication(connReq.id, 60);
     
     if (!authResult.success) {
-      console.log('Authentication failed. Please try again.');
+      console.log('❌ Authentication failed. Please try again.');
       return;
     }
     
-    console.log(':-)) GitHub successfully connected!\n');
+    console.log('✅ GitHub successfully connected!\n');
     
-    // Get GitHub username
     const username = await getGitHubUsername();
     if (!username) {
-      console.log(': ((  Could not retrieve GitHub username.');
+      console.log('❌ Could not retrieve GitHub username.');
       return;
     }
     
-    console.log(`:0 GitHub User: ${username}`);
-    console.log(`(~~) Local Repository: ${repoName}\n`);
+    console.log(`👤 GitHub User: ${username}`);
+    console.log(`📁 Local Repository: ${repoName}\n`);
     
     const repoCheck = await checkRepoExists(username, repoName);
     
     if (!repoCheck.exists) {
       const createResult = await createGitHubRepo(repoName);
       if (!createResult.success) {
-        console.log(':( Failed to create repository. Aborting.');
+        console.log('❌ Failed to create repository. Aborting.');
         return;
       }
     }
@@ -326,7 +325,7 @@ async function sync() {
     const gitStatus = await checkGitStatus();
     
     if (!gitStatus.initialized) {
-      console.log(':0 Initializing local git repository...');
+      console.log('🔧 Initializing local git repository...');
       const initSuccess = await initializeGit();
       if (!initSuccess) return;
     }
@@ -337,21 +336,21 @@ async function sync() {
     const currentStatus = await checkGitStatus();
     
     if (currentStatus.hasChanges) {
-      console.log(':0 Preparing to push changes...\n');
+      console.log('📦 Preparing to push changes...\n');
       const pushSuccess = await commitAndPush();
       
       if (pushSuccess) {
-        console.log(':--))))) All done! Your changes are now on GitHub!');
-        console.log(`//// View at: https://github.com/${username}/${repoName}\n`);
+        console.log('🎉 All done! Your changes are now on GitHub!');
+        console.log(`🔗 View at: https://github.com/${username}/${repoName}\n`);
       }
     } else {
       console.log('✓ Everything is up to date. Nothing to push.\n');
     }
     
   } catch (error) {
-    console.error('\n : ) Error:', error.message);
+    console.error('\n❌ Error:', error.message);
     if (error.details) {
-      console.error('Details:', error.details);
+      console.error('📋 Details:', error.details);
     }
   }
 }
